@@ -23,6 +23,19 @@ def parse_response(res: Response) -> tuple[dict, list[dict]]:
     # count: int = data['totalCount']
     return status, currencies
 
+def aggregate_data(currencies: list[dict]) -> tuple[list, list]:
+    coins: list[tuple] = []
+    quotes: list[tuple] = []
+    for cur in currencies:
+        coins.append((cur["id"], cur["name"], cur["slug"],
+                     cur["symbol"], cur["dateAdded"]))
+
+        for quote in cur["quotes"]:  # Multiple currency quotes
+            quotes.append((cur["id"], cur["name"], quote["name"], quote["price"],
+                          quote["volume24h"], quote["marketCap"], quote["percentChange1h"],
+                          quote["percentChange24h"], quote["percentChange7d"],
+                          quote["ytdPriceChangePercentage"], quote["lastUpdated"]))
+    return coins, quotes
 def pipeline():
 
     # Get data
@@ -37,6 +50,11 @@ def pipeline():
     except json.JSONDecodeError as json_err:
         raise json_err
 
+    # Validate - right types, right size, expected data...
+    # currencies = validate(currencies)
+
+    # Aggregate
+    coins, quotes = aggregate_data(currencies=currencies)
 def setup(conn: Connection):
     conn.execute("""
         CREATE TABLE IF NOT EXISTS quotes (
