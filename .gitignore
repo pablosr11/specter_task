@@ -1,0 +1,5 @@
+.vscode/
+.ipynb_checkpoint*
+*.db
+*.docx
+.DS_Store
