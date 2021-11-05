@@ -85,7 +85,14 @@ def pipeline():
     coins, quotes = serialize_data(currencies=currencies)
 
     # Storage
-    store(conn=con, coins=coins, quotes=quotes)
+    try:
+        store(conn=con, coins=coins, quotes=quotes)
+    except sqlite3.IntegrityError:
+        # API caches responses for 1-3 minutes. Integrity error will be raised if same timestamp + coin_id is already stored for the quotes
+        # We could tigthen or release our constraints here too. Ideally this would be would catch this earlier. 
+        # Just passing for DEMO purposes
+        print("Err: Received duplicated data. Data not being stored")
+        pass
 
 
 def setup(conn: Connection):
