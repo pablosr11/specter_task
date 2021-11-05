@@ -13,23 +13,23 @@ API_KEYS = {'maxSupply', 'isAudited', 'totalSupply',
             'id', 'platform', 'tags'}
 
 
-DISCORD_GENERAL = ""
+# Send alerts to discord channel
 webhook: Webhook = Webhook.from_url(
     DISCORD_GENERAL, adapter=RequestsWebhookAdapter())
 
 URL = "https://api.coinmarketcap.com/data-api/v3/cryptocurrency/listing?limit=100"
-con: Connection = sqlite3.connect('example.db')
+con: Connection = sqlite3.connect('specter.db')
 
 
 def parse_response(res: Response) -> tuple[dict, list[dict]]:
     rjson = res.json()
     status: dict = rjson["status"]
     currencies: list[dict] = rjson["data"]['cryptoCurrencyList']
-    # count: int = data['totalCount']
+    # count: int = data['totalCount'] # Do we want to keep track of this?
     return status, currencies
 
 
-def aggregate_data(currencies: list[dict]) -> tuple[list, list]:
+def serialize_data(currencies: list[dict]) -> tuple[list, list]:
     coins: list[tuple] = []
     quotes: list[tuple] = []
     for cur in currencies:
@@ -72,17 +72,17 @@ def pipeline():
     try:
         status, currencies = parse_response(r)
     except KeyError as key_err:
-        webhook.send("Key Error when parsing API. Check new api keys.")
+        webhook.send("Key Error when parsing API. Check new api fields.")
         raise key_err
     except json.JSONDecodeError as json_err:
-        webhook.send("JSON Decoding error when parsing API")
+        webhook.send("JSON Decoding error when parsing API response")
         raise json_err
 
-    # Validate - right types, right size, expected data...
+    # Validate (Not implemented) - right types, right size, expected data...
     # currencies = validate(currencies)
 
-    # Aggregate
-    coins, quotes = aggregate_data(currencies=currencies)
+    # Serialize data for storage
+    coins, quotes = serialize_data(currencies=currencies)
 
     # Storage
     store(conn=con, coins=coins, quotes=quotes)
